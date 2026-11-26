@@ -7,6 +7,86 @@ CSC579, Fall 2026
 This logbook records the work done on the project, in date order. Each entry lists what was done, what was tested, and what comes next.
 
 ---
+## 2026-11-25
+
+### Done
+
+Peer program:
+
+- Added `peer/node.py`, a threaded peer. It replaces `peer/peer.py` from 2026-10-21. It uses `peer/messages.py` for all sending and receiving.
+- Two peers exchange HELLO, then the peer that opened the connection sends PING at a set interval and the other answers PONG.
+- Peer discovery. A new peer contacts a seed only to get a list of peers (PEERS), then hangs up. It then connects to peers from that list until it reaches its peer-list size. Every peer accepts incoming connections and shares a random sample of up to 20 peers it has heard of.
+- JSON line logging. Each peer writes `logs/<port>.jsonl`. Each line has timestamp, node, event, peer, bytes, and role (bot or benign). Events: connect, fail, hello, peers, ping, pong.
+- A peer is identified by its port number.
+- Added an empty `tests/__init__.py` so `unittest discover` finds the tests.
+
+Research:
+
+- Verified the Holz et al. Storm reference against the paper. Title, authors, and venue (USENIX LEET 2008) are correct. The paper gives no values for any of the five bot settings.
+- Reviewed Mahboubi et al. (Internet of Things, 2025). Useful as background. No values for the settings.
+- Checked the TNT paper (Zhao et al.). It compares topology-only detection with no benign P2P peers against one fixed amount (about 10K of 140K nodes). It does not vary the amount of benign traffic.
+
+Change of research direction:
+
+- The main experiment changes from sweeping five bot settings to dilution: how many benign peers, and how much mixing between bots and benign peers, it takes before structure-based detection can no longer separate the botnet. The idea came from a classmate's question on 2026-11-20. It extends TNT's two-point comparison into a curve.
+- Draft research question: How many legitimate P2P peers, and how much mixing between bots and legitimate peers, does it take before structure-based detection can no longer separate a P2P botnet?
+- Detection stays structure-based with no machine learning: degree, density, mutual contacts, Louvain community detection.
+
+### Tested
+
+Unit tests: `python3 -m unittest discover -v`
+
+Result: 9 tests ran, all passed (3 framing, 2 messages, 4 node). The node tests cover HELLO, PING, and PONG, log line fields, discovery through a seed, and logging a failed connection to a dead peer.
+
+
+### Notes
+
+- The first discovery version turned peers away when full. Newcomers ran out of peers to try and the network split into 44 separate pieces. Fixed by limiting only the connections a peer opens itself and always accepting incoming ones.
+- The first few peers to join open no connections themselves, and early peers collect more incoming links. A periodic peer exchange round should fix this.
+- Peers will run as threads in one program, each on its own port, so up to about 1,000 peers fit on one computer.
+- Times will be scaled down (for example 1 s in the program stands for 10 s) so each run takes minutes. The report must state this.
+- `peer/peer.py` is no longer used.
+
+### Next
+
+Settings file and launcher: start many peers in one program, with role, peer-list size, periodic peer exchange, and the bot-to-bot mixing setting.
+---
+## 2026-11-20
+
+### Done
+
+- Responded to classmates' questions on the project update.
+
+- The discussion gave a useful idea for improving the project: change the ratio of bots to normal peers and measure how much harder detection gets.
+
+
+### Next
+
+Finish the peer program. Consider the bot to normal peer ratio as an experiment.
+
+---
+
+## 2026-11-18
+
+### Done
+
+- Reviewed classmates' project updates and gave feedback.
+
+---
+
+## 2026-11-16
+
+### Done
+
+- Submitted the midterm project update. Research question and approach unchanged from the proposal.
+- Reported progress: repository and website set up, message framing complete and tested.
+- Adjustments reported: peer overlap needs a measurable definition, a source for the legitimate peer settings is still being chosen, and the Holz et al. Storm reference is being checked against the paper.
+- Revised schedule: finish the peer program Nov 17 to 24, then starting values, analysis code, and experiments Nov 25 to Dec 1, then report, presentation, and website.
+
+### Next
+
+Finish the peer program: discovery, peer list exchange, heartbeats, logging, and settings.
+
 
 ### 2026-10-21
 
