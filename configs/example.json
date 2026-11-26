@@ -1,0 +1,17 @@
+{
+    "bots": 20,
+    "benign": 80,
+    "duration": 30,
+    "log_dir": "logs/example",
+    "random_seed": 1,
+    "all": {
+        "max_peers": 8,
+        "ping_interval": 5.0,
+        "jitter": 0.5,
+        "exchange_interval": 5.0,
+        "churn": 0.2
+    },
+    "bot_settings": {
+        "bot_preference": 0.8
+    }
+}
