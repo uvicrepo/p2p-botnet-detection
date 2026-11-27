@@ -7,6 +7,24 @@ CSC579, Fall 2026
 This logbook records the work done on the project, in date order. Each entry lists what was done, what was tested, and what comes next.
 
 ---
+---
+## 2026-11-26
+
+### Done
+
+- Added `analysis/analyze.py`. Builds a communication graph from one run's logs and scores degree, mutual contacts, and Louvain communities against the true roles.
+- Changed the bot model. Bots no longer prefer other bots. They connect to a fixed set of shared benign peers instead, set by `shared_preference`.
+- Added `.gitignore` for logs, Python cache, and the virtual environment.
+- Added `peer/launch.py` and `configs/example.json`. Starts many peers in one program from a settings file.
+
+### Tested
+
+`python3 -m unittest discover -v`: 15 tests, all passed.
+
+### Next
+
+Experiments.
+---
 ## 2026-11-25
 
 ### Done
