@@ -70,7 +70,7 @@ class Peer:
     def _accept_loop(self):
         while self.running:
             try:
-                sock, _ = self.server.accept()
+                sock, _ = self.server.accept() # type: ignore
             except OSError:
                 break
             threading.Thread(target=self._handle, args=(sock, "incoming"), daemon=True).start()
