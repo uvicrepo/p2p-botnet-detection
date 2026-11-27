@@ -4,6 +4,7 @@
     "duration": 30,
     "log_dir": "logs/example",
     "random_seed": 1,
+    "shared_peers": 20,
     "all": {
         "max_peers": 8,
         "ping_interval": 5.0,
@@ -12,6 +13,6 @@
         "churn": 0.2
     },
     "bot_settings": {
-        "bot_preference": 0.8
+    "shared_preference": 0.8
     }
 }

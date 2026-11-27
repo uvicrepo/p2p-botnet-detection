@@ -42,19 +42,24 @@ def auc(bot_scores, benign_scores):
     return wins / (len(bot_scores) * len(benign_scores))
 
 
-def mutual_contact_score(graph, node):
-    # Average share of contacts this peer has in common with each of its
-    # neighbours (Jaccard similarity of contact lists). A simplified version
-    # of the mutual-contacts idea: bots in one botnet tend to share contacts.
-    mine = set(graph[node])
-    if not mine:
-        return 0.0
-    scores = []
-    for other in mine:
-        theirs = set(graph[other]) - {node}
-        union = (mine - {other}) | theirs
-        scores.append(len((mine - {other}) & theirs) / len(union) if union else 0.0)
-    return statistics.mean(scores)
+TOP_K = 5  # how many most-similar peers to average over
+
+
+def mutual_contact_scores(graph):
+    # For each peer, find the TOP_K other peers whose contact lists overlap
+    # most with its own (Jaccard similarity), and average that overlap.
+    # Bots that contact the same peers score high, even if they are not
+    # linked to each other. A simplified version of mutual-contacts detection.
+    contacts = {n: set(graph[n]) for n in graph}
+    scores = {}
+    for u in graph:
+        overlaps = []
+        for v in graph:
+            if v != u and contacts[u] & contacts[v]:
+                overlaps.append(len(contacts[u] & contacts[v]) / len(contacts[u] | contacts[v]))
+        top = sorted(overlaps, reverse=True)[:TOP_K]
+        scores[u] = statistics.mean(top) if top else 0.0
+    return scores
 
 
 def louvain_scores(graph, bots, seed=1):
@@ -93,9 +98,10 @@ def analyze(run_dir, window):
     benign = set(graph) - bots
 
     degree = dict(graph.degree())
-    mutual = {n: mutual_contact_score(graph, n) for n in graph}
+    mutual = mutual_contact_scores(graph)
+    shared = set(config.get("shared_ports", []))
     bot_edges = [(a, b) for a, b in graph.edges() if a in bots or b in bots]
-    bot_to_bot = sum(1 for a, b in bot_edges if a in bots and b in bots)
+    to_shared = sum(1 for a, b in bot_edges if a in shared or b in shared)
     gaps = ping_gaps(rows)
     settings = {**config.get("all", {}), **config.get("bot_settings", {})}
 
@@ -104,8 +110,10 @@ def analyze(run_dir, window):
         "bots": len(bots),
         "benign": len(benign),
         "benign_per_bot": len(benign) / len(bots),
-        "bot_preference": settings.get("bot_preference", 0.0),
-        "measured_mixing": bot_to_bot / len(bot_edges) if bot_edges else 0.0,
+        "shared_peers": len(shared),
+        "shared_preference": settings.get("shared_preference", 0.0),
+        # Share of bot links that go to the shared peers.
+        "measured_sharing": to_shared / len(bot_edges) if bot_edges else 0.0,
         "edges": graph.number_of_edges(),
         "density": nx.density(graph),
         "bot_density": nx.density(graph.subgraph(bots)),

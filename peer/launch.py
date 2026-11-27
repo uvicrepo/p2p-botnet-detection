@@ -14,7 +14,7 @@ DEFAULTS = {
     "ping_interval": 5.0,
     "jitter": 0.5,
     "exchange_interval": 5.0,
-    "bot_preference": 0.0,
+    "shared_preference": 0.0,
     "churn": 0.0,
 }
 
@@ -32,8 +32,6 @@ def run(config):
     os.makedirs(log_dir, exist_ok=True)
     for old in glob.glob(os.path.join(log_dir, "*.jsonl")):
         os.remove(old)
-    with open(os.path.join(log_dir, "config.json"), "w") as f:
-        json.dump(config, f, indent=2)
 
     # Shuffle roles so bots and benign peers join in random order.
     roles = ["bot"] * config["bots"] + ["benign"] * config["benign"]
@@ -44,10 +42,20 @@ def run(config):
         # Linux uses ports from 32768 up for outgoing connections.
         raise ValueError("peer ports must stay below 32768")
     seed_port = base
+
+    # Pick the shared peers the bots all know, from the benign peers.
+    benign_ports = [base + i for i, role in enumerate(roles) if role == "benign"]
+    shared = sorted(random.sample(benign_ports, min(config.get("shared_peers", 20), len(benign_ports))))
+    config = {**config, "shared_ports": shared}
+    with open(os.path.join(log_dir, "config.json"), "w") as f:
+        json.dump(config, f, indent=2)
+
     peers = []
     for i, role in enumerate(roles):
         settings = {**DEFAULTS, **config.get("all", {}), **config.get(f"{role}_settings", {})}
         seeds = [] if i == 0 else [seed_port]
+        if role == "bot":
+            settings["shared_peers"] = shared
         peers.append(Peer(base + i, role, seeds, log_dir=log_dir, **settings))
 
     raise_file_limit()

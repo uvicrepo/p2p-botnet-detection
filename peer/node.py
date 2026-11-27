@@ -16,7 +16,7 @@ class Peer:
     # A peer is identified by its port number.
     def __init__(self, port, role="benign", seeds=(), max_peers=10,
                  ping_interval=2.0, jitter=0.0, exchange_interval=None,
-                 bot_preference=0.0, churn=0.0, log_dir="logs"):
+                 shared_peers=(), shared_preference=0.0, churn=0.0, log_dir="logs"):
         self.port = port
         self.role = role
         self.seeds = list(seeds)
@@ -24,7 +24,10 @@ class Peer:
         self.ping_interval = ping_interval
         self.jitter = jitter  # 0.5 means each wait is the interval plus or minus 50%
         self.exchange_interval = exchange_interval  # None means no periodic exchange
-        self.bot_preference = bot_preference  # chance a bot picks another bot
+        # Bots all know the same few peers, like Storm bots searching the
+        # same keys. shared_preference is the chance a bot picks one of them.
+        self.shared_peers = set(shared_peers)
+        self.shared_preference = shared_preference
         self.churn = churn  # fraction of opened links dropped each exchange round
         os.makedirs(log_dir, exist_ok=True)
         self.log_file = open(os.path.join(log_dir, f"{port}.jsonl"), "a", buffering=1)
@@ -32,7 +35,7 @@ class Peer:
         self.incoming = {}  # socket -> peer port, connections others opened
         self.pending = set()  # ports we are connecting to
         self.tried = set()  # ports we have tried, so each is tried once
-        self.known = {}  # port -> role, every peer we have heard of
+        self.known = set()  # every peer we have heard of
         self.lock = threading.Lock()
         self.running = True
         self.server = None
@@ -45,7 +48,7 @@ class Peer:
                 self.log_file.write(line + "\n")
 
     def send(self, sock, msg_type, **fields):
-        messages.send(sock, {"type": msg_type, "id": self.port, "role": self.role, **fields})
+        messages.send(sock, {"type": msg_type, "id": self.port, **fields})
 
     def _wait(self, interval):
         time.sleep(interval * (1 + random.uniform(-self.jitter, self.jitter)))
@@ -127,15 +130,17 @@ class Peer:
         picks = []
         with self.lock:
             linked = set(self.outgoing.values()) | set(self.incoming.values())
-            candidates = [p for p in self.known
-                          if p != self.port and p not in self.tried and p not in linked]
-            while candidates and not self._full():
-                bots = [p for p in candidates if self.known[p] == "bot"]
-                if self.role == "bot" and bots and random.random() < self.bot_preference:
-                    port = random.choice(bots)
+            skip = linked | self.tried | {self.port}
+            candidates = [p for p in self.known if p not in skip]
+            shared = [p for p in self.shared_peers if p not in skip]
+            while (candidates or shared) and not self._full():
+                if shared and (not candidates or random.random() < self.shared_preference):
+                    port = random.choice(shared)
                 else:
                     port = random.choice(candidates)
-                candidates.remove(port)
+                for pool in (candidates, shared):
+                    if port in pool:
+                        pool.remove(port)
                 self.tried.add(port)
                 self.pending.add(port)
                 picks.append(port)
@@ -184,7 +189,7 @@ class Peer:
 
     def _sample_known(self, exclude):
         with self.lock:
-            entries = [[p, r] for p, r in self.known.items() if p != exclude]
+            entries = [p for p in self.known if p != exclude]
         return random.sample(entries, min(PEERS_SAMPLE, len(entries)))
 
     def _handle(self, sock, mode):
@@ -194,7 +199,7 @@ class Peer:
                 msg_type, sender = message["type"], message["id"]
                 self.log(msg_type.lower(), sender, len(json.dumps(message)))
                 with self.lock:
-                    self.known[sender] = message.get("role", "benign")
+                    self.known.add(sender)
 
                 if msg_type == "HELLO":
                     if message.get("bootstrap"):
@@ -209,8 +214,7 @@ class Peer:
                     self.log("connect", sender)
                 elif msg_type == "PEERS":
                     with self.lock:
-                        for port, role in message["peers"]:
-                            self.known.setdefault(port, role)
+                        self.known.update(message["peers"])
                     if message.get("ask"):
                         self.send(sock, "PEERS", peers=self._sample_known(sender))
                     self.fill()
