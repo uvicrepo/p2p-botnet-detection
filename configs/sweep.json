@@ -1,0 +1,17 @@
+{
+    "bots": 20,
+    "benign_per_bot": [2, 5, 10, 19],
+    "shared_preference": [0.0, 0.5, 0.8, 1.0],
+    "repeats": 2,
+    "duration": 40,
+    "shared_peers": 20,
+    "log_root": "logs/sweep",
+    "results": "results/sweep.csv",
+    "all": {
+        "max_peers": 8,
+        "ping_interval": 5.0,
+        "jitter": 0.5,
+        "exchange_interval": 5.0,
+        "churn": 0.2
+    }
+}
