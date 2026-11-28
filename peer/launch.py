@@ -46,7 +46,11 @@ def run(config):
     # Pick the rendezvous peers the bots all know, from the benign peers.
     benign_ports = [base + i for i, role in enumerate(roles) if role == "benign"]
     rendezvous = sorted(random.sample(benign_ports, min(config.get("rendezvous_peers", 20), len(benign_ports))))
-    config = {**config, "rendezvous_ports": rendezvous}
+    # Pick the ultrapeers: a share of the other benign peers (0 means none).
+    others = [p for p in benign_ports if p not in rendezvous]
+    count = round(config.get("ultrapeer_fraction", 0.0) * len(benign_ports))
+    ultrapeers = sorted(random.sample(others, min(count, len(others))))
+    config = {**config, "rendezvous_ports": rendezvous, "ultrapeer_ports": ultrapeers}
     with open(os.path.join(log_dir, "config.json"), "w") as f:
         json.dump(config, f, indent=2)
 
@@ -56,6 +60,7 @@ def run(config):
         seeds = [] if i == 0 else [seed_port]
         if role == "bot":
             settings["rendezvous_peers"] = rendezvous
+        settings["ultrapeers"] = ultrapeers
         peers.append(Peer(base + i, role, seeds, log_dir=log_dir, **settings))
 
     raise_file_limit()

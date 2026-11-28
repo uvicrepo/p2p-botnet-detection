@@ -8,6 +8,28 @@ This logbook records the work done on the project, in date order. Each entry lis
 
 ---
 ---
+## 2026-11-27
+
+### Done
+
+- Added `experiments/sweep.py`. Runs every combination in a sweep plan and writes one results row per run.
+- Ran the first sweep: 20 bots, 32 runs. Results in `results/sweep.csv`.
+- Renamed shared peers to rendezvous peers in the code.
+- Removed Louvain community detection from the analysis.
+- Analysis now measures dilution (share of the bots' neighbours that are ordinary benign peers) and average neighbour overlap for bots and benign peers.
+- New settings: 40 bots, 20 rendezvous peers, 10 links opened per peer.
+- Launcher now opens every port before peers connect. This removed failed connections at startup.
+- Started the second sweep: `configs/sweep_dilution.json` and `configs/sweep_ratio.json`.
+
+### Tested
+
+`python3 -m unittest discover -v`: 16 tests, all passed.
+
+### Next
+
+Charts from the second sweep.
+
+---
 ## 2026-11-26
 
 ### Done
@@ -24,6 +46,7 @@ This logbook records the work done on the project, in date order. Each entry lis
 ### Next
 
 Experiments.
+
 ---
 ## 2026-11-25
 

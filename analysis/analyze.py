@@ -94,7 +94,8 @@ def analyze(run_dir, window):
     # (benign, and not rendezvous peers).
     bot_neighbours = [n for b in bots for n in graph[b]]
     ordinary_neighbours = [n for n in bot_neighbours if n not in bots and n not in rendezvous]
-    ordinary = benign - rendezvous
+    ordinary = benign - rendezvous  # includes ultrapeers, which are ordinary benign peers too
+    ultrapeers = set(config.get("ultrapeer_ports", []))
 
     result = {
         "run": os.path.basename(os.path.normpath(run_dir)),
@@ -112,6 +113,9 @@ def analyze(run_dir, window):
         "bot_overlap": statistics.mean(mutual[n] for n in bots),
         "ordinary_overlap": statistics.mean(mutual[n] for n in ordinary),
         "rendezvous_overlap": statistics.mean(mutual[n] for n in rendezvous) if rendezvous else 0.0,
+        "ultrapeers": len(ultrapeers),
+        "ultrapeer_overlap": statistics.mean(mutual[n] for n in ultrapeers) if ultrapeers else 0.0,
+        "ultrapeer_neighbours": statistics.mean(degree[n] for n in ultrapeers) if ultrapeers else 0.0,
         "edges": graph.number_of_edges(),
         "density": nx.density(graph),
         "bot_density": nx.density(graph.subgraph(bots)),

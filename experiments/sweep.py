@@ -45,8 +45,10 @@ def sweep(plan):
             "base_port": plan.get("base_port", 20000),
             "random_seed": repeat,
             "rendezvous_peers": plan["rendezvous_peers"],
+            "ultrapeer_fraction": plan.get("ultrapeer_fraction", 0.0),
             "all": plan["all"],
             "bot_settings": {"rendezvous_preference": preference},
+            "benign_settings": plan.get("benign_settings", {}),
         }
         print(f"[{i}/{len(combos)}] {name}: {config['bots']} bots, {config['benign']} benign")
         # Each run gets its own process, so nothing is left over between runs.

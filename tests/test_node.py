@@ -95,6 +95,24 @@ class TestPeers(unittest.TestCase):
         self.assertTrue(bot_links)
         self.assertGreaterEqual(sum(q in rendezvous for q in bot_links) / len(bot_links), 0.8)
 
+    def test_peers_link_to_ultrapeers(self):
+        ports = list(range(9181, 9193))
+        ultrapeers = ports[1:3]
+        peers = [Peer(p, seeds=[] if i == 0 else [ports[0]], max_peers=3,
+                      exchange_interval=0.2, ultrapeers=ultrapeers, ultrapeer_links=2,
+                      log_dir=self.log_dir)
+                 for i, p in enumerate(ports)]
+        for p in peers:
+            p.start()
+            time.sleep(0.05)
+        time.sleep(1.5)
+        others = [p for p in peers if p.port not in ultrapeers]
+        with_both = sum(1 for p in others if set(ultrapeers) <= set(p.outgoing.values()))
+        for p in peers:
+            p.stop()
+        # Most peers should have opened links to both ultrapeers.
+        self.assertGreaterEqual(with_both, len(others) * 0.7)
+
     def test_exchange_rounds_fill_early_peers(self):
         # Without exchange rounds, the first newcomer finds nobody to connect to.
         ports = list(range(9161, 9171))
