@@ -10,7 +10,7 @@ from peer.node import Peer
 
 # Settings each peer gets unless its role overrides them.
 DEFAULTS = {
-    "max_peers": 8,
+    "max_peers": 10,
     "ping_interval": 5.0,
     "jitter": 0.5,
     "exchange_interval": 5.0,
@@ -60,6 +60,9 @@ def run(config):
 
     raise_file_limit()
     print(f"Starting {len(peers)} peers ({config['bots']} bots, {config['benign']} benign).")
+    # Open every port first, so no peer tries to reach one that is not listening yet.
+    for peer in peers:
+        peer.listen()
     for peer in peers:
         peer.start()
         time.sleep(config.get("join_gap", 0.01))

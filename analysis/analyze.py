@@ -90,6 +90,12 @@ def analyze(run_dir, window):
     gaps = ping_gaps(rows)
     settings = {**config.get("all", {}), **config.get("bot_settings", {})}
 
+    # Dilution: share of the bots' neighbours that are ordinary benign peers
+    # (benign, and not rendezvous peers).
+    bot_neighbours = [n for b in bots for n in graph[b]]
+    ordinary_neighbours = [n for n in bot_neighbours if n not in bots and n not in rendezvous]
+    ordinary = benign - rendezvous
+
     result = {
         "run": os.path.basename(os.path.normpath(run_dir)),
         "bots": len(bots),
@@ -100,6 +106,12 @@ def analyze(run_dir, window):
                                               settings.get("shared_preference", 0.0)),
         # Share of bot links that go to the rendezvous peers.
         "rendezvous_share": to_rendezvous / len(bot_edges) if bot_edges else 0.0,
+        "dilution": len(ordinary_neighbours) / len(bot_neighbours) if bot_neighbours else 0.0,
+        "mean_neighbours": statistics.mean(degree.values()),
+        # Average mutual contacts score (neighbour overlap) for each kind of peer.
+        "bot_overlap": statistics.mean(mutual[n] for n in bots),
+        "ordinary_overlap": statistics.mean(mutual[n] for n in ordinary),
+        "rendezvous_overlap": statistics.mean(mutual[n] for n in rendezvous) if rendezvous else 0.0,
         "edges": graph.number_of_edges(),
         "density": nx.density(graph),
         "bot_density": nx.density(graph.subgraph(bots)),

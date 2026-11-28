@@ -15,8 +15,8 @@ PEERS_SAMPLE = 20  # how many known peers to share in one PEERS message
 class Peer:
     # A peer is identified by its port number.
     def __init__(self, port, role="benign", seeds=(), max_peers=10,
-                 ping_interval=2.0, jitter=0.0, exchange_interval=None,
-                 rendezvous_peers=(), rendezvous_preference=0.0, churn=0.0, log_dir="logs"):
+                    ping_interval=2.0, jitter=0.0, exchange_interval=None,
+                    rendezvous_peers=(), rendezvous_preference=0.0, churn=0.0, log_dir="logs"):
         self.port = port
         self.role = role
         self.seeds = list(seeds)
@@ -42,7 +42,7 @@ class Peer:
 
     def log(self, event, peer, size=0):
         line = json.dumps({"ts": time.time(), "node": self.port, "event": event,
-                           "peer": peer, "bytes": size, "role": self.role})
+                            "peer": peer, "bytes": size, "role": self.role})
         with self.lock:
             if not self.log_file.closed:
                 self.log_file.write(line + "\n")
@@ -54,7 +54,8 @@ class Peer:
         time.sleep(interval * (1 + random.uniform(-self.jitter, self.jitter)))
 
     def start(self):
-        self.listen()
+        if self.server is None:
+            self.listen()
         for seed in self.seeds:
             self.bootstrap(seed)
         if self.exchange_interval:

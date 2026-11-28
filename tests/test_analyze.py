@@ -59,6 +59,8 @@ class TestAnalyze(unittest.TestCase):
 
         result = analyze(run_dir, window=15)
         self.assertEqual(result["rendezvous_share"], 1.0)
+        self.assertEqual(result["dilution"], 0.0)  # bots only link to rendezvous peers
+        self.assertGreater(result["bot_overlap"], result["ordinary_overlap"])
         self.assertLess(result["degree_auc"], 0.9)
         self.assertGreater(result["mutual_contacts_auc"], 0.9)
 

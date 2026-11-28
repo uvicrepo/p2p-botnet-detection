@@ -1,0 +1,24 @@
+{
+  "bots": 40,
+  "benign_per_bot": [
+    2,
+    4,
+    9
+  ],
+  "rendezvous_preference": [
+    0.0,
+    0.8
+  ],
+  "repeats": 3,
+  "duration": 40,
+  "rendezvous_peers": 20,
+  "log_root": "logs/sweep2",
+  "results": "results/sweep2.csv",
+  "all": {
+    "max_peers": 10,
+    "ping_interval": 5.0,
+    "jitter": 0.5,
+    "exchange_interval": 5.0,
+    "churn": 0.2
+  }
+}

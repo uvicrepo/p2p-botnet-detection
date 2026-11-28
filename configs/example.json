@@ -1,12 +1,12 @@
 {
-  "bots": 20,
-  "benign": 80,
+  "bots": 40,
+  "benign": 160,
   "duration": 30,
   "log_dir": "logs/example",
   "random_seed": 1,
   "rendezvous_peers": 20,
   "all": {
-    "max_peers": 8,
+    "max_peers": 10,
     "ping_interval": 5.0,
     "jitter": 0.5,
     "exchange_interval": 5.0,
