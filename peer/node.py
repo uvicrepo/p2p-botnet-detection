@@ -16,7 +16,7 @@ class Peer:
     # A peer is identified by its port number.
     def __init__(self, port, role="benign", seeds=(), max_peers=10,
                  ping_interval=2.0, jitter=0.0, exchange_interval=None,
-                 shared_peers=(), shared_preference=0.0, churn=0.0, log_dir="logs"):
+                 rendezvous_peers=(), rendezvous_preference=0.0, churn=0.0, log_dir="logs"):
         self.port = port
         self.role = role
         self.seeds = list(seeds)
@@ -25,9 +25,9 @@ class Peer:
         self.jitter = jitter  # 0.5 means each wait is the interval plus or minus 50%
         self.exchange_interval = exchange_interval  # None means no periodic exchange
         # Bots all know the same few peers, like Storm bots searching the
-        # same keys. shared_preference is the chance a bot picks one of them.
-        self.shared_peers = set(shared_peers)
-        self.shared_preference = shared_preference
+        # same keys. rendezvous_preference is the chance a bot picks one of them.
+        self.rendezvous_peers = set(rendezvous_peers)
+        self.rendezvous_preference = rendezvous_preference
         self.churn = churn  # fraction of opened links dropped each exchange round
         os.makedirs(log_dir, exist_ok=True)
         self.log_file = open(os.path.join(log_dir, f"{port}.jsonl"), "a", buffering=1)
@@ -132,13 +132,13 @@ class Peer:
             linked = set(self.outgoing.values()) | set(self.incoming.values())
             skip = linked | self.tried | {self.port}
             candidates = [p for p in self.known if p not in skip]
-            shared = [p for p in self.shared_peers if p not in skip]
-            while (candidates or shared) and not self._full():
-                if shared and (not candidates or random.random() < self.shared_preference):
-                    port = random.choice(shared)
+            rendezvous = [p for p in self.rendezvous_peers if p not in skip]
+            while (candidates or rendezvous) and not self._full():
+                if rendezvous and (not candidates or random.random() < self.rendezvous_preference):
+                    port = random.choice(rendezvous)
                 else:
                     port = random.choice(candidates)
-                for pool in (candidates, shared):
+                for pool in (candidates, rendezvous):
                     if port in pool:
                         pool.remove(port)
                 self.tried.add(port)

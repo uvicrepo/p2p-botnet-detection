@@ -14,7 +14,7 @@ DEFAULTS = {
     "ping_interval": 5.0,
     "jitter": 0.5,
     "exchange_interval": 5.0,
-    "shared_preference": 0.0,
+    "rendezvous_preference": 0.0,
     "churn": 0.0,
 }
 
@@ -43,10 +43,10 @@ def run(config):
         raise ValueError("peer ports must stay below 32768")
     seed_port = base
 
-    # Pick the shared peers the bots all know, from the benign peers.
+    # Pick the rendezvous peers the bots all know, from the benign peers.
     benign_ports = [base + i for i, role in enumerate(roles) if role == "benign"]
-    shared = sorted(random.sample(benign_ports, min(config.get("shared_peers", 20), len(benign_ports))))
-    config = {**config, "shared_ports": shared}
+    rendezvous = sorted(random.sample(benign_ports, min(config.get("rendezvous_peers", 20), len(benign_ports))))
+    config = {**config, "rendezvous_ports": rendezvous}
     with open(os.path.join(log_dir, "config.json"), "w") as f:
         json.dump(config, f, indent=2)
 
@@ -55,7 +55,7 @@ def run(config):
         settings = {**DEFAULTS, **config.get("all", {}), **config.get(f"{role}_settings", {})}
         seeds = [] if i == 0 else [seed_port]
         if role == "bot":
-            settings["shared_peers"] = shared
+            settings["rendezvous_peers"] = rendezvous
         peers.append(Peer(base + i, role, seeds, log_dir=log_dir, **settings))
 
     raise_file_limit()

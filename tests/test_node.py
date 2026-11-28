@@ -75,15 +75,15 @@ class TestPeers(unittest.TestCase):
         self.assertIn(("fail", 9139), [(e["event"], e["peer"]) for e in read_log(self.log_dir, 9131)])
 
 
-    def test_bots_use_shared_peers(self):
+    def test_bots_use_rendezvous_peers(self):
         ports = list(range(9141, 9154))
         roles = ["benign"] + ["bot", "benign"] * 6
-        shared = [9142 + 1, 9142 + 3, 9142 + 5]  # three benign peers
+        rendezvous = [9142 + 1, 9142 + 3, 9142 + 5]  # three benign peers
         peers = [Peer(p, r, seeds=[] if i == 0 else [ports[0]], max_peers=3,
-                    exchange_interval=0.2, churn=0.5, log_dir=self.log_dir,
-                    shared_peers=shared if r == "bot" else (),
-                    shared_preference=1.0)
-                for i, (p, r) in enumerate(zip(ports, roles))]
+                      exchange_interval=0.2, churn=0.5, log_dir=self.log_dir,
+                      rendezvous_peers=rendezvous if r == "bot" else (),
+                      rendezvous_preference=1.0)
+                 for i, (p, r) in enumerate(zip(ports, roles))]
         for p in peers:
             p.start()
             time.sleep(0.05)
@@ -93,14 +93,14 @@ class TestPeers(unittest.TestCase):
             p.stop()
 
         self.assertTrue(bot_links)
-        self.assertGreaterEqual(sum(q in shared for q in bot_links) / len(bot_links), 0.8)
+        self.assertGreaterEqual(sum(q in rendezvous for q in bot_links) / len(bot_links), 0.8)
 
     def test_exchange_rounds_fill_early_peers(self):
         # Without exchange rounds, the first newcomer finds nobody to connect to.
         ports = list(range(9161, 9171))
         peers = [Peer(ports[0], log_dir=self.log_dir)]
         peers += [Peer(p, seeds=[ports[0]], max_peers=3, exchange_interval=0.2,
-                    log_dir=self.log_dir) for p in ports[1:]]
+                       log_dir=self.log_dir) for p in ports[1:]]
         for p in peers:
             p.start()
             time.sleep(0.05)

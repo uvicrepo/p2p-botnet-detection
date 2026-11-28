@@ -62,22 +62,6 @@ def mutual_contact_scores(graph):
     return scores
 
 
-def louvain_scores(graph, bots, seed=1):
-    communities = nx.community.louvain_communities(graph, seed=seed)
-    # How bot-heavy is the community each bot lands in, compared with the
-    # bot share of the whole network?
-    community_of = {n: c for c in communities for n in c}
-    bot_share = len(bots) / graph.number_of_nodes()
-    purity = statistics.mean(len(community_of[b] & bots) / len(community_of[b]) for b in bots)
-    # Best case: flag the single community with the most bots.
-    best = max(communities, key=lambda c: len(c & bots))
-    precision = len(best & bots) / len(best)
-    recall = len(best & bots) / len(bots)
-    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
-    return {"communities": len(communities), "bot_purity": purity,
-            "bot_share": bot_share, "best_community_f1": f1}
-
-
 def ping_gaps(rows):
     # Time between PINGs on each link, to check the interval setting.
     times = {}
@@ -99,9 +83,10 @@ def analyze(run_dir, window):
 
     degree = dict(graph.degree())
     mutual = mutual_contact_scores(graph)
-    shared = set(config.get("shared_ports", []))
+    # Runs made before the rename saved these as shared_ports and shared_preference.
+    rendezvous = set(config.get("rendezvous_ports", config.get("shared_ports", [])))
     bot_edges = [(a, b) for a, b in graph.edges() if a in bots or b in bots]
-    to_shared = sum(1 for a, b in bot_edges if a in shared or b in shared)
+    to_rendezvous = sum(1 for a, b in bot_edges if a in rendezvous or b in rendezvous)
     gaps = ping_gaps(rows)
     settings = {**config.get("all", {}), **config.get("bot_settings", {})}
 
@@ -110,10 +95,11 @@ def analyze(run_dir, window):
         "bots": len(bots),
         "benign": len(benign),
         "benign_per_bot": len(benign) / len(bots),
-        "shared_peers": len(shared),
-        "shared_preference": settings.get("shared_preference", 0.0),
-        # Share of bot links that go to the shared peers.
-        "measured_sharing": to_shared / len(bot_edges) if bot_edges else 0.0,
+        "rendezvous_peers": len(rendezvous),
+        "rendezvous_preference": settings.get("rendezvous_preference",
+                                              settings.get("shared_preference", 0.0)),
+        # Share of bot links that go to the rendezvous peers.
+        "rendezvous_share": to_rendezvous / len(bot_edges) if bot_edges else 0.0,
         "edges": graph.number_of_edges(),
         "density": nx.density(graph),
         "bot_density": nx.density(graph.subgraph(bots)),
@@ -122,7 +108,6 @@ def analyze(run_dir, window):
         "mutual_contacts_auc": auc([mutual[n] for n in bots], [mutual[n] for n in benign]),
         "mean_ping_gap": statistics.mean(gaps) if gaps else 0.0,
     }
-    result.update(louvain_scores(graph, bots))
     return result
 
 

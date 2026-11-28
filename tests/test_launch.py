@@ -10,9 +10,9 @@ class TestLaunch(unittest.TestCase):
     def test_every_peer_writes_a_log(self):
         log_dir = tempfile.mkdtemp()
         config = {"bots": 3, "benign": 7, "duration": 1, "log_dir": log_dir,
-                "base_port": 9201, "random_seed": 1, "join_gap": 0.02,
-                "all": {"max_peers": 3, "exchange_interval": 0.3},
-                "shared_peers": 2, "bot_settings": {"shared_preference": 0.8}}
+                  "base_port": 9201, "random_seed": 1, "join_gap": 0.02,
+                  "all": {"max_peers": 3, "exchange_interval": 0.3},
+                  "rendezvous_peers": 2, "bot_settings": {"rendezvous_preference": 0.8}}
         run(config)
 
         logs = [f for f in os.listdir(log_dir) if f.endswith(".jsonl")]
@@ -25,7 +25,7 @@ class TestLaunch(unittest.TestCase):
                 roles.append(lines[0]["role"])
         self.assertEqual(roles.count("bot"), 3)
         with open(os.path.join(log_dir, "config.json")) as f:
-            self.assertEqual(len(json.load(f)["shared_ports"]), 2)
+            self.assertEqual(len(json.load(f)["rendezvous_ports"]), 2)
 
 
 if __name__ == "__main__":

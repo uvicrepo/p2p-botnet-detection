@@ -28,7 +28,7 @@ def append_row(results_path, row):
 
 
 def sweep(plan):
-    combos = list(itertools.product(plan["benign_per_bot"], plan["shared_preference"],
+    combos = list(itertools.product(plan["benign_per_bot"], plan["rendezvous_preference"],
                                     range(1, plan["repeats"] + 1)))
     done = run_names_done(plan["results"])
     print(f"{len(combos)} runs planned, {len(done)} already in {plan['results']}.")
@@ -44,9 +44,9 @@ def sweep(plan):
             "log_dir": os.path.join(plan["log_root"], name),
             "base_port": plan.get("base_port", 20000),
             "random_seed": repeat,
-            "shared_peers": plan["shared_peers"],
+            "rendezvous_peers": plan["rendezvous_peers"],
             "all": plan["all"],
-            "bot_settings": {"shared_preference": preference},
+            "bot_settings": {"rendezvous_preference": preference},
         }
         print(f"[{i}/{len(combos)}] {name}: {config['bots']} bots, {config['benign']} benign")
         # Each run gets its own process, so nothing is left over between runs.
