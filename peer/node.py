@@ -16,7 +16,8 @@ class Peer:
     # A peer is identified by its port number.
     def __init__(self, port, role="benign", seeds=(), max_peers=10,
                     ping_interval=2.0, jitter=0.0, exchange_interval=None,
-                    rendezvous_peers=(), rendezvous_preference=0.0, churn=0.0, log_dir="logs"):
+                    rendezvous_peers=(), rendezvous_preference=0.0, churn=0.0,
+                    ultrapeers=(), ultrapeer_links=0, log_dir="logs"):
         self.port = port
         self.role = role
         self.seeds = list(seeds)
@@ -29,6 +30,10 @@ class Peer:
         self.rendezvous_peers = set(rendezvous_peers)
         self.rendezvous_preference = rendezvous_preference
         self.churn = churn  # fraction of opened links dropped each exchange round
+        # Popular benign peers, like Gnutella ultrapeers. Every peer keeps up to
+        # ultrapeer_links of the links it opens pointed at them.
+        self.ultrapeers = set(ultrapeers)
+        self.ultrapeer_links = ultrapeer_links
         os.makedirs(log_dir, exist_ok=True)
         self.log_file = open(os.path.join(log_dir, f"{port}.jsonl"), "a", buffering=1)
         self.outgoing = {}  # socket -> peer port, connections we opened
@@ -134,12 +139,20 @@ class Peer:
             skip = linked | self.tried | {self.port}
             candidates = [p for p in self.known if p not in skip]
             rendezvous = [p for p in self.rendezvous_peers if p not in skip]
-            while (candidates or rendezvous) and not self._full():
-                if rendezvous and (not candidates or random.random() < self.rendezvous_preference):
+            ultra = [p for p in self.ultrapeers if p not in skip]
+            ultra_open = sum(1 for p in list(self.outgoing.values()) + list(self.pending)
+                             if p in self.ultrapeers)
+            while (candidates or rendezvous or ultra) and not self._full():
+                if ultra and ultra_open < self.ultrapeer_links:
+                    port = random.choice(ultra)
+                    ultra_open += 1
+                elif rendezvous and (not candidates or random.random() < self.rendezvous_preference):
                     port = random.choice(rendezvous)
-                else:
+                elif candidates:
                     port = random.choice(candidates)
-                for pool in (candidates, rendezvous):
+                else:
+                    break
+                for pool in (candidates, rendezvous, ultra):
                     if port in pool:
                         pool.remove(port)
                 self.tried.add(port)
